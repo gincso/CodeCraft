@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 class GeminiProvider(LLMProvider):
     name = "gemini"
-    default_model = "gemini-1.5-pro"
+    default_model = "gemini-2.0-flash"
 
     def __init__(self, model: Optional[str] = None, temperature: float = 0.7, max_tokens: int = 16384):
         super().__init__(model, temperature, max_tokens)

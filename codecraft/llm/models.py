@@ -80,44 +80,40 @@ def get_models_by_tier(tier: str) -> list[ModelSpec]:
 # Agent → optimal model mapping (cost-optimized)
 AGENT_MODEL_MAP: dict[str, list[str]] = {
     "researcher": [
-        "gemini-2.0-flash",      # free, good for web search and analysis
-        "gpt-4o-mini",            # cheap fallback
-        "llama-3.3-70b-versatile",
+        "llama-3.1-8b-instruct",  # OpenRouter free tier - always available
+        "qwen-2.5-72b",
+        "gpt-4o-mini",
     ],
     "planner": [
-        "llama-3.3-70b-versatile",  # free on Groq, strong reasoning
-        "gpt-4o-mini",               # cheap fallback
-        "gemini-2.0-flash",
+        "llama-3.1-8b-instruct",
+        "qwen-2.5-72b",
+        "gpt-4o-mini",
     ],
     "architect": [
-        "gemini-2.0-flash",        # free, good system design
-        "llama-3.3-70b-versatile", # free on Groq
+        "llama-3.1-8b-instruct",
+        "qwen-2.5-72b",
         "gpt-4o-mini",
     ],
     "developer": [
-        "gpt-4o-mini",              # cheap, excellent code gen
-        "llama-3.3-70b-versatile",  # free fallback
-        "claude-3.5-haiku",
+        "llama-3.1-8b-instruct",
+        "mistral-large",
+        "gpt-4o-mini",
     ],
     "reviewer": [
-        "llama-3.3-70b-versatile",  # free, good for review
-        "gemini-2.0-flash",         # free fallback
-        "gpt-4o-mini",
+        "llama-3.1-8b-instruct",
+        "qwen-2.5-72b",
     ],
     "tester": [
-        "llama-3.3-70b-versatile",  # free, good for test gen
-        "gemini-2.0-flash",
-        "gpt-4o-mini",
+        "llama-3.1-8b-instruct",
+        "qwen-2.5-72b",
     ],
     "devops": [
-        "llama-3.3-70b-versatile",  # free, good for config/code
-        "gemini-2.0-flash",
-        "gpt-4o-mini",
+        "llama-3.1-8b-instruct",
+        "qwen-2.5-72b",
     ],
     "security": [
-        "llama-3.3-70b-versatile",  # free, good for pattern matching
-        "gemini-2.0-flash",
-        "gpt-4o-mini",
+        "llama-3.1-8b-instruct",
+        "qwen-2.5-72b",
     ],
 }
 
@@ -132,32 +128,38 @@ def resolve_model_for_agent(agent_name: str) -> tuple[str, str]:
     from codecraft.config import settings
 
     available_providers = {
-        "gpt-4o-mini": "openai",
-        "gpt-4o": "openai",
-        "gemini-2.0-flash": "gemini",
-        "gemini-1.5-flash": "gemini",
-        "gemini-2.0-pro": "gemini",
-        "llama-3.1-70b-versatile": "groq",
-        "llama-3.3-70b-versatile": "groq",
-        "mixtral-8x7b-32768": "groq",
-        "gemma-2-9b-it": "groq",
-        "llama-3.1-70b": "openrouter",
-        "llama-3.1-8b-instruct": "openrouter",
-        "claude-3.5-haiku": "openrouter",
-        "qwen-2.5-72b": "openrouter",
-        "claude-sonnet-4": "openrouter",
-        "mistral-large": "openrouter",
+        "gpt-4o-mini": ("openai", "gpt-4o-mini"),
+        "gpt-4o": ("openai", "gpt-4o"),
+        "gemini-2.0-flash": ("gemini", "gemini-2.0-flash"),
+        "gemini-1.5-flash": ("gemini", "gemini-1.5-flash"),
+        "gemini-2.0-pro": ("gemini", "gemini-2.0-pro"),
+        "llama-3.1-70b-versatile": ("groq", "llama-3.1-70b-versatile"),
+        "llama-3.3-70b-versatile": ("groq", "llama-3.3-70b-versatile"),
+        "mixtral-8x7b-32768": ("groq", "mixtral-8x7b-32768"),
+        "gemma-2-9b-it": ("groq", "gemma-2-9b-it"),
+        "llama-3.1-70b": ("openrouter", "meta-llama/llama-3.1-70b-instruct"),
+        "llama-3.1-8b-instruct": ("openrouter", "meta-llama/llama-3.1-8b-instruct"),
+        "claude-3.5-haiku": ("openrouter", "anthropic/claude-3.5-haiku"),
+        "qwen-2.5-72b": ("openrouter", "qwen/qwen-2.5-72b-instruct"),
+        "claude-sonnet-4": ("openrouter", "anthropic/claude-sonnet-4-20250514"),
+        "mistral-large": ("openrouter", "mistralai/mistral-large"),
     }
 
     for model_name in models:
-        provider = available_providers.get(model_name, "openai")
-        if provider == "openai" and settings.llm.openai_api_key:
-            return model_name, provider
-        if provider == "gemini" and settings.llm.gemini_api_key:
-            return model_name, provider
-        if provider == "groq" and settings.llm.groq_api_key:
-            return model_name, provider
-        if provider == "openrouter" and settings.llm.openrouter_api_key:
-            return model_name, provider
+        provider_info = available_providers.get(model_name)
+        if not provider_info:
+            continue
+        provider, actual_model = provider_info
 
-    return models[0], available_providers.get(models[0], "openai")
+        has_key = {
+            "openai": settings.llm.openai_api_key,
+            "gemini": settings.llm.gemini_api_key,
+            "groq": settings.llm.groq_api_key,
+            "openrouter": settings.llm.openrouter_api_key,
+        }.get(provider)
+
+        if has_key or provider == "ollama":
+            return actual_model, provider
+
+    fallback = available_providers.get(models[0], ("openai", models[0]))
+    return fallback[1], fallback[0]

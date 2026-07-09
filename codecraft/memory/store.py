@@ -7,9 +7,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
-import chromadb
-from chromadb.config import Settings as ChromaSettings
-
 from codecraft.config import settings
 
 logger = logging.getLogger(__name__)
@@ -19,18 +16,33 @@ class AgentMemory:
     def __init__(self, memory_dir: Optional[str] = None):
         memory_dir = memory_dir or str(Path(settings.data_dir) / "memory")
         Path(memory_dir).mkdir(parents=True, exist_ok=True)
+        self._memory_dir = memory_dir
+        self._client = None
+        self._collections: dict[str, Any] = {}
+        self._initialized = False
+        logger.info(f"AgentMemory path: {memory_dir} (lazy init)")
 
+    @property
+    def client(self):
+        if self._client is None:
+            self._init_client()
+        return self._client
+
+    def _init_client(self) -> None:
+        if self._initialized:
+            return
+        import chromadb
+        from chromadb.config import Settings as ChromaSettings
         self._client = chromadb.PersistentClient(
-            path=memory_dir,
+            path=self._memory_dir,
             settings=ChromaSettings(anonymized_telemetry=False),
         )
-        self._collections: dict[str, Any] = {}
-        logger.info(f"AgentMemory initialized at {memory_dir}")
+        self._initialized = True
 
     def _get_collection(self, name: str) -> Any:
         if name not in self._collections:
             safe_name = name.replace("/", "_").replace(" ", "_").replace(".", "_")
-            self._collections[name] = self._client.get_or_create_collection(
+            self._collections[name] = self.client.get_or_create_collection(
                 name=safe_name,
                 metadata={"hnsw:space": "cosine"},
             )
@@ -66,11 +78,15 @@ class AgentMemory:
     ) -> list[dict[str, Any]]:
         try:
             collection = self._get_collection(agent)
+            count = collection.count()
+            if count == 0:
+                return []
+            
             where = {"type": memory_type} if memory_type else None
 
             results = collection.query(
                 query_texts=[query],
-                n_results=min(n_results, collection.count()),
+                n_results=min(n_results, max(count, 1)),
                 where=where,
             )
 
@@ -181,7 +197,7 @@ class AgentMemory:
 
     def clear_agent_memory(self, agent: str) -> None:
         try:
-            self._client.delete_collection(name=agent.replace("/", "_"))
+            self.client.delete_collection(name=agent.replace("/", "_"))
             self._collections.pop(agent, None)
             logger.info(f"Cleared memory for agent: {agent}")
         except Exception as e:
@@ -202,7 +218,7 @@ class AgentMemory:
 
     def _list_collections(self) -> list[str]:
         try:
-            return [c.name for c in self._client.list_collections()]
+            return [c.name for c in self.client.list_collections()]
         except Exception:
             return list(self._collections.keys())
 

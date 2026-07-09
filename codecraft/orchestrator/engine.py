@@ -155,6 +155,9 @@ class Orchestrator:
                 agent.name = agent_name
                 agent.default_model = model
 
+                from codecraft.llm import create_provider
+                agent.provider = create_provider(provider, model=model)
+
                 ctx = self._make_context()
                 agent.set_context(ctx)
 
@@ -162,7 +165,10 @@ class Orchestrator:
                 agent.register_tools(tools)
 
                 agent.on_event(lambda e, d, a=agent_name: self._emit(f"agent_{e}", {**d, "agent": a}))
-                agent.enable_memory()
+                try:
+                    agent.enable_memory()
+                except Exception:
+                    pass
 
                 input_text = self._build_agent_input(phase, artifact_name)
                 self._emit("agent_running", {"agent": agent_name, "input_length": len(input_text)})

@@ -139,11 +139,11 @@ class BaseAgent(abc.ABC):
             try:
                 mem_query = f"{self.name} task: {self._context.project_name} {input_text[:200]}"
                 memory_ctx = self._memory.get_context_window(self.name, mem_query)
-                if memory_ctx:
+                if memory_ctx and len(memory_ctx) > 10:
                     self._messages.append(LLMMessage(role="system", content=memory_ctx))
                     self._emit("memory_recall", {"agent": self.name, "memories": len(memory_ctx)})
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"Memory recall skipped: {e}")
 
         self._messages.append(LLMMessage(role="user", content=input_text))
 
