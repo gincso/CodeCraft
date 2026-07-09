@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.egg-info/
+dist/
+build/
+*.egg
+.env
+.DS_Store
+*.codecraft.tar.gz
+projects/
+/tmp/
+.codecraft/
+*.db
+node_modules/
