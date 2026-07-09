@@ -19,6 +19,9 @@ from codecraft.tools.shell import ShellTool
 from codecraft.tools.web_search import WebSearchTool, WebFetchTool
 from codecraft.tools.code_runner import CodeRunnerTool
 from codecraft.tools.git import GitTool
+from codecraft.tools.github_search import GitHubSearchTool, GitHubRepoInspectTool
+from codecraft.tools.package_search import PackageSearchTool
+from codecraft.tools.discovery import ToolDiscovery
 from codecraft.llm.models import resolve_model_for_agent, get_agent_models
 from codecraft.state.store import project_store
 from codecraft.config import settings
@@ -97,14 +100,25 @@ class Orchestrator:
                    SearchFilesTool(workdir=workdir)]
 
         agent_tools = {
-            "researcher": [WebSearchTool(workdir=workdir), WebFetchTool(workdir=workdir)],
-            "planner": [WebSearchTool(workdir=workdir)],
-            "architect": [WebSearchTool(workdir=workdir)],
-            "developer": [ShellTool(workdir=workdir), CodeRunnerTool(workdir=workdir), GitTool(workdir=workdir)],
-            "reviewer": [ShellTool(workdir=workdir), GrepTool(workdir=workdir)],
-            "tester": [ShellTool(workdir=workdir), CodeRunnerTool(workdir=workdir)],
-            "devops": [ShellTool(workdir=workdir), GitTool(workdir=workdir)],
-            "security": [ShellTool(workdir=workdir), GrepTool(workdir=workdir), WebSearchTool(workdir=workdir)],
+            "researcher": [WebSearchTool(workdir=workdir), WebFetchTool(workdir=workdir),
+                          GitHubSearchTool(workdir=workdir), GitHubRepoInspectTool(workdir=workdir),
+                          PackageSearchTool(workdir=workdir), ToolDiscovery(workdir=workdir)],
+            "planner": [WebSearchTool(workdir=workdir), GitHubSearchTool(workdir=workdir),
+                       PackageSearchTool(workdir=workdir)],
+            "architect": [WebSearchTool(workdir=workdir), GitHubSearchTool(workdir=workdir),
+                         GitHubRepoInspectTool(workdir=workdir), PackageSearchTool(workdir=workdir),
+                         ToolDiscovery(workdir=workdir)],
+            "developer": [ShellTool(workdir=workdir), CodeRunnerTool(workdir=workdir),
+                         GitTool(workdir=workdir), PackageSearchTool(workdir=workdir),
+                         GitHubSearchTool(workdir=workdir), ToolDiscovery(workdir=workdir)],
+            "reviewer": [ShellTool(workdir=workdir), GrepTool(workdir=workdir),
+                        GitHubSearchTool(workdir=workdir)],
+            "tester": [ShellTool(workdir=workdir), CodeRunnerTool(workdir=workdir),
+                      PackageSearchTool(workdir=workdir)],
+            "devops": [ShellTool(workdir=workdir), GitTool(workdir=workdir),
+                      PackageSearchTool(workdir=workdir), ToolDiscovery(workdir=workdir)],
+            "security": [ShellTool(workdir=workdir), GrepTool(workdir=workdir),
+                        WebSearchTool(workdir=workdir), GitHubSearchTool(workdir=workdir)],
         }
         return common + agent_tools.get(agent_name, [])
 

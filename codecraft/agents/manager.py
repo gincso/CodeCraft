@@ -6,6 +6,7 @@ from typing import Any, Callable, Optional
 
 from codecraft.agents.base import BaseAgent, AgentContext
 from codecraft.tools.base import BaseTool, ToolRegistry, ToolRisk, ToolResult
+from codecraft.tools.discovery import ToolDiscovery
 from codecraft.llm.base import LLMMessage, LLMResponse
 from codecraft.llm.models import resolve_model_for_agent
 
@@ -168,6 +169,113 @@ For tool approval:
                 )
             except Exception:
                 pass
+
+    async def discover_tool(
+        self,
+        need: str,
+        language: str = "python",
+        auto_install: bool = True,
+        workdir: str = "",
+    ) -> dict[str, Any]:
+        discovery = ToolDiscovery(workdir=workdir or ".")
+        result = await discovery.execute(need=need, language=language, auto_install=auto_install)
+        await discovery.close()
+        return {
+            "success": result.success,
+            "output": result.output,
+            "metadata": result.metadata,
+            "created_tools": discovery.get_created_tools(),
+        }
+
+    async def ensure_tool_available(
+        self,
+        agent_name: str,
+        tool_need: str,
+        language: str = "python",
+    ) -> dict[str, Any]:
+        agent = self._agent_pool.get(agent_name)
+        if not agent:
+            return {"success": False, "error": f"Agent {agent_name} not found"}
+
+        self._emit("tool_discovery_start", {
+            "agent": agent_name,
+            "need": tool_need,
+        })
+
+        discovery = ToolDiscovery(workdir=agent.context.workdir if agent.context else ".")
+        result = await discovery.execute(need=tool_need, language=language, auto_install=True)
+        await discovery.close()
+
+        if result.metadata.get("created_tool") and discovery.get_created_tools():
+            tool_info = discovery.get_created_tools()[0]
+            self._emit("tool_created", {
+                "agent": agent_name,
+                "need": tool_need,
+                "path": tool_info["path"],
+            })
+
+        self._emit("tool_discovery_complete", {
+            "agent": agent_name,
+            "found_existing": not result.metadata.get("created_tool"),
+        })
+
+        return {
+            "success": result.success,
+            "output": result.output,
+            "metadata": result.metadata,
+            "created_tools": discovery.get_created_tools(),
+        }
+
+    async def register_custom_tool(
+        self,
+        name: str,
+        description: str,
+        code: str,
+        share_with: Optional[list[str]] = None,
+    ) -> bool:
+        exec_namespace: dict[str, Any] = {}
+        try:
+            exec(code, exec_namespace)
+        except Exception as e:
+            self._emit("tool_registration_failed", {"name": name, "error": str(e)})
+            return False
+
+        tool_class = None
+        for obj in exec_namespace.values():
+            if isinstance(obj, type) and issubclass(obj, BaseTool) and obj != BaseTool:
+                tool_class = obj
+                break
+
+        if tool_class is None:
+            class_name = name.replace("_", " ").title().replace(" ", "")
+            class CustomGeneratedTool(BaseTool):
+                name = name
+                description = description
+                risk = ToolRisk.EXECUTE
+
+                async def execute(self, **kwargs):
+                    try:
+                        exec(code, {"__builtins__": __builtins__, "BaseTool": BaseTool, "ToolResult": ToolResult})
+                        return ToolResult(success=True, output=f"Executed: {name}", metadata=kwargs)
+                    except Exception as e:
+                        return ToolResult(success=False, output="", error=str(e))
+
+                def get_parameters_schema(self):
+                    return {"type": "object", "properties": {}, "required": []}
+
+            tool_class = CustomGeneratedTool
+
+        tool_instance = tool_class()
+        self._shared_tools.register(tool_instance)
+
+        targets = share_with or list(self._agent_pool.keys())
+        for agent_name in targets:
+            agent = self._agent_pool.get(agent_name)
+            if agent:
+                agent.register_tool(tool_instance)
+
+        self._emit("tool_registered", {"name": name, "shared_with": targets})
+        return True
 
     async def close(self) -> None:
         for agent in self._agent_pool.values():
