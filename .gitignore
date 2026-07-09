@@ -17,3 +17,4 @@ node_modules/
 
 *.egg-info/
 codecraft.egg-info/
+webui/dist/
