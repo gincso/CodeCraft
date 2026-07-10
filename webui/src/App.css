@@ -101,3 +101,165 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #58a6ff
 .save-msg { color: #3fb950; font-size: 0.85rem; padding: 4px 8px; background: #23863622; border-radius: 4px; }
 .kv-table td div[style*="cursor: pointer"]:hover { color: #c9d1d9; }
 .kv-table input { background: #0d1117; border: 1px solid #30363d; border-radius: 4px; color: #c9d1d9; }
+
+/* Conversation View */
+.conversation-view {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 80px);
+  padding: 16px;
+}
+
+.conversation-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.conversation-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.conversation-controls {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.agent-filter {
+  background: #161b22;
+  border: 1px solid #30363d;
+  color: #c9d1d9;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.auto-scroll-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  color: #8b949e;
+  cursor: pointer;
+}
+
+.auto-scroll-toggle input {
+  cursor: pointer;
+}
+
+.conversation-status {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+  font-size: 0.875rem;
+}
+
+.status-connected {
+  color: #3fb950;
+}
+
+.status-disconnected {
+  color: #f85149;
+}
+
+.message-count {
+  color: #8b949e;
+}
+
+.conversation-messages {
+  flex: 1;
+  overflow-y: auto;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.message {
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 12px;
+  transition: border-color 0.2s;
+}
+
+.message:hover {
+  border-color: #58a6ff;
+}
+
+.message-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 0.875rem;
+}
+
+.message-icon {
+  font-size: 1rem;
+}
+
+.message-agent {
+  font-weight: 600;
+  color: #c9d1d9;
+}
+
+.message-role {
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+.message-time {
+  margin-left: auto;
+  color: #8b949e;
+  font-size: 0.75rem;
+}
+
+.message-content {
+  color: #c9d1d9;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.9rem;
+}
+
+.message-metadata {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.metadata-tag {
+  background: #21262d;
+  color: #8b949e;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.message-tool_call {
+  border-left: 3px solid #d29922;
+}
+
+.message-tool_result {
+  border-left: 3px solid #8b949e;
+  opacity: 0.9;
+}
+
+.message-assistant {
+  border-left: 3px solid #3fb950;
+}
+
+.message-user {
+  border-left: 3px solid #58a6ff;
+}

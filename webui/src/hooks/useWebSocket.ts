@@ -5,7 +5,7 @@ const WS_URL = `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${win
 export interface WSEvent {
   type: string;
   event?: string;
-  data?: Record<string, unknown>;
+  data?: any;
   timestamp?: string;
 }
 

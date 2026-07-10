@@ -7,9 +7,10 @@ import ProjectSetup from "./components/ProjectSetup";
 import ProjectDetail from "./components/ProjectDetail";
 import AgentTheater from "./components/AgentTheater";
 import AdminPanel from "./components/AdminPanel";
+import ConversationView from "./components/ConversationView";
 import "./App.css";
 
-type Page = "dashboard" | "setup" | "run" | "detail" | "admin";
+type Page = "dashboard" | "setup" | "run" | "detail" | "admin" | "conversations";
 
 function App() {
   const [page, setPage] = useState<Page>("dashboard");
@@ -84,6 +85,7 @@ function App() {
           <button className={page === "dashboard" ? "active" : ""} onClick={() => { setPage("dashboard"); setSelectedProject(null); }}>Projects</button>
           <button className={page === "setup" ? "active" : ""} onClick={() => setPage("setup")}>New</button>
           <button className={page === "admin" ? "active" : ""} onClick={() => setPage("admin")}>Admin</button>
+          <button className={page === "conversations" ? "active" : ""} onClick={() => setPage("conversations")}>Conversations</button>
           {activeRun && <button className="active" onClick={() => setPage("run")}>Live Run</button>}
           <span className={`ws-status ${connected ? "connected" : "disconnected"}`}>
             {connected ? "connected" : "reconnecting"}
@@ -121,6 +123,8 @@ function App() {
         )}
 
         {page === "admin" && <AdminPanel />}
+
+        {page === "conversations" && <ConversationView />}
       </main>
     </div>
   );

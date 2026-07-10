@@ -125,6 +125,17 @@ class BaseAgent(abc.ABC):
             async def execute(self, **kw): return ToolResult(True, "")
         return await self._manager._handle_approval(DummyTool(), {"reason": reason})
 
+    def _emitMessage(self, role: str, content: str, metadata: dict | None = None):
+        """Emit a conversation message for real-time viewing."""
+        from datetime import datetime
+        self._emit("message", {
+            "agent": self.name,
+            "role": role,
+            "content": content[:2000] if content else "",
+            "metadata": metadata or {},
+            "timestamp": datetime.now().isoformat(),
+        })
+
     async def run(self, input_text: str, stream: bool = False) -> str | AsyncIterator[str]:
         if not self._context:
             raise RuntimeError("Agent context not set. Call set_context() first.")
@@ -146,6 +157,7 @@ class BaseAgent(abc.ABC):
                 logger.warning(f"Memory recall skipped: {e}")
 
         self._messages.append(LLMMessage(role="user", content=input_text))
+        self._emitMessage("user", input_text, {"turn": 0})
 
         if stream:
             return self._run_stream()
@@ -168,6 +180,13 @@ class BaseAgent(abc.ABC):
                 "turn": self._turn_count,
             })
 
+            # Emit assistant message
+            self._emitMessage("assistant", response.content or "", {
+                "turn": self._turn_count,
+                "model": response.model,
+                "usage": response.usage,
+            })
+
             if response.tool_calls:
                 for tc in response.tool_calls:
                     fn = tc.get("function", {})
@@ -183,6 +202,12 @@ class BaseAgent(abc.ABC):
                         "args": tool_args,
                     })
 
+                    # Emit tool call message
+                    self._emitMessage("tool_call", f"{tool_name}({json.dumps(tool_args)})", {
+                        "turn": self._turn_count,
+                        "tool": tool_name,
+                    })
+
                     result = await self._tools.execute_tool(tool_name, **tool_args)
 
                     self._emit("tool_result", {
@@ -190,6 +215,13 @@ class BaseAgent(abc.ABC):
                         "tool": tool_name,
                         "success": result.success,
                         "output": result.output[:1000],
+                    })
+
+                    # Emit tool result message
+                    self._emitMessage("tool_result", result.output[:2000], {
+                        "turn": self._turn_count,
+                        "tool": tool_name,
+                        "success": result.success,
                     })
 
                     self._messages.append(LLMMessage(
