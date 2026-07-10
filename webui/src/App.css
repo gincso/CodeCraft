@@ -97,3 +97,7 @@ input:focus, textarea:focus, select:focus { outline: none; border-color: #58a6ff
 .endpoint-item { display: flex; gap: 12px; align-items: center; font-size: 0.83rem; padding: 4px 0; border-bottom: 1px solid #21262d; }
 .endpoint-method { background: #21262d; padding: 2px 8px; border-radius: 4px; font-family: monospace; font-size: 0.75rem; min-width: 60px; text-align: center; }
 .endpoint-path { font-family: monospace; color: #58a6ff; }
+
+.save-msg { color: #3fb950; font-size: 0.85rem; padding: 4px 8px; background: #23863622; border-radius: 4px; }
+.kv-table td div[style*="cursor: pointer"]:hover { color: #c9d1d9; }
+.kv-table input { background: #0d1117; border: 1px solid #30363d; border-radius: 4px; color: #c9d1d9; }

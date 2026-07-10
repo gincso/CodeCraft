@@ -306,6 +306,43 @@ async def api_setup(body: ConfigUpdate):
     return {"saved": True, "key": body.key}
 
 
+@app.get("/api/admin/config")
+async def get_config():
+    from codecraft.main import _read_env
+    env = _read_env()
+    return {"config": env}
+
+
+@app.post("/api/admin/config")
+async def update_config(body: ConfigUpdate):
+    from codecraft.main import _read_env, _write_env
+    env = _read_env()
+    env[body.key] = body.value
+    _write_env(env)
+    return {"updated": True, "key": body.key}
+
+
+@app.post("/api/admin/config/revert")
+async def revert_config():
+    from codecraft.main import _read_env, _write_env
+    from codecraft.config import settings
+
+    defaults = {
+        "CODECRAFT_LLM_PROVIDER": settings.llm.provider,
+        "CODECRAFT_LLM_MODEL": settings.llm.model,
+        "CODECRAFT_LLM_TEMPERATURE": str(settings.llm.temperature),
+        "CODECRAFT_LLM_MAX_RETRIES": str(settings.llm.max_retries),
+        "CODECRAFT_LLM_FALLBACK_CHAIN": '["openai","gemini","groq","openrouter","ollama"]',
+        "CODECRAFT_DEPLOY_DOMAIN": settings.deploy.domain,
+        "CODECRAFT_DEPLOY_VPS_PORT": str(settings.deploy.vps_port),
+    }
+
+    env = _read_env()
+    env.update(defaults)
+    _write_env(env)
+    return {"reverted": True, "keys": list(defaults.keys())}
+
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
