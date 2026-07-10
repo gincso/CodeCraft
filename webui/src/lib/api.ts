@@ -12,7 +12,7 @@ async function request(path: string, options: RequestInit = {}) {
 export const api = {
   health: () => request("/health"),
   info: () => request("/api/info"),
-  projects: { list: () => request("/api/projects"), create: (data: { name: string; description: string; mode: string }) => request("/api/projects", { method: "POST", body: JSON.stringify(data) }), },
+  projects: { list: () => request("/api/projects"), create: (data: { name: string; description: string; mode: string }) => request("/api/projects", { method: "POST", body: JSON.stringify(data) }), get: (path: string) => request(`/api/projects/${encodeURIComponent(path)}`), },
   run: { start: (projectPath: string, mode: string) => request("/api/run", { method: "POST", body: JSON.stringify({ project_path: projectPath, mode }), }), status: (runId: string) => request(`/api/run/${runId}`), cancel: (runId: string) => request(`/api/run/${runId}/cancel`, { method: "POST" }), },
   agents: () => request("/api/agents"),
   memory: { stats: () => request("/api/memory"), search: (agent: string, query: string) => request("/api/memory/search", { method: "POST", body: JSON.stringify({ agent, query }), }), },

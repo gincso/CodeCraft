@@ -104,6 +104,30 @@ def _check_key_configured(name: str) -> bool:
     return bool(checks.get(name))
 
 
+def _list_project_files(project_path: str) -> list[dict[str, Any]]:
+    import os
+    files = []
+    try:
+        for root, dirs, filenames in os.walk(project_path):
+            dirs[:] = [d for d in dirs if not d.startswith(".") and d not in ("__pycache__", "node_modules", ".venv", ".git")]
+            for f in filenames:
+                if f.startswith(".") or f == "codecraft.json":
+                    continue
+                fpath = os.path.join(root, f)
+                rel = os.path.relpath(fpath, project_path)
+                try:
+                    size = os.path.getsize(fpath)
+                    with open(fpath) as fp:
+                        content = fp.read()[:5000]
+                except:
+                    content = "[binary]"
+                    size = 0
+                files.append({"name": rel, "size": size, "content": content})
+    except Exception:
+        pass
+    return sorted(files, key=lambda x: x["name"])
+
+
 @app.get("/api/providers")
 async def list_providers():
     from codecraft.llm import registry
@@ -125,10 +149,18 @@ async def create_project(body: ProjectCreate):
 
 
 @app.get("/api/projects/{project_slug}")
-async def get_project(project_slug: str):
+async def get_project(project_slug: str, path: str = ""):
     try:
-        path = str(project_store.base_dir / project_slug)
-        manifest = project_store.load(path)
+        if path:
+            manifest_path = path
+        else:
+            manifest_path = str(project_store.base_dir / project_slug)
+
+        manifest_path = manifest_path.replace("%2F", "/")
+        manifest = project_store.load(manifest_path)
+
+        if manifest.get("_path"):
+            manifest["files"] = _list_project_files(manifest["_path"])
         return {"project": manifest}
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="Project not found")

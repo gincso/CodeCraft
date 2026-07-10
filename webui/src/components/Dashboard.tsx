@@ -3,9 +3,10 @@ interface Props {
   agents: Array<Record<string, unknown>>;
   onNew: () => void;
   onRefresh: () => void;
+  onSelect: (project: Record<string, unknown>) => void;
 }
 
-export default function Dashboard({ projects, agents, onNew, onRefresh }: Props) {
+export default function Dashboard({ projects, agents, onNew, onRefresh, onSelect }: Props) {
   return (
     <div className="dashboard">
       <div className="actions-bar">
@@ -24,7 +25,11 @@ export default function Dashboard({ projects, agents, onNew, onRefresh }: Props)
       ) : (
         <div className="project-grid">
           {projects.map((p) => (
-            <div key={p._path as string} className="project-card">
+            <div
+              key={p._path as string}
+              className="project-card clickable"
+              onClick={() => onSelect(p)}
+            >
               <h3>{p.name as string}</h3>
               <span className={`status ${p.status}`}>{p.status as string}</span>
               <p className="desc">{(p.description as string)?.slice(0, 100) || ""}</p>
@@ -50,7 +55,6 @@ export default function Dashboard({ projects, agents, onNew, onRefresh }: Props)
             <span className="dim">{a.current_model as string}</span>
           </div>
         ))}
-        {agents.length === 0 && <p className="dim">Loading agents...</p>}
       </div>
     </div>
   );
